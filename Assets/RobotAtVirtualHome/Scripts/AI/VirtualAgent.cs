@@ -10,13 +10,15 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace RobotAtVirtualHome {
+namespace RobotAtVirtualHome
+{
 
     [RequireComponent(typeof(NavMeshAgent))]
 
-    public class VirtualAgent : MonoBehaviour {
+    public class VirtualAgent : MonoBehaviour
+    {
 
-        public enum StatusMode {Starting, Loading, Walking, Turning, Finished }
+        public enum StatusMode { Starting, Loading, Walking, Turning, Finished }
         public enum PathType { Beacons, Interpolated }
 
         [Header("General")]
@@ -39,27 +41,35 @@ namespace RobotAtVirtualHome {
         protected NavMeshAgent agent;
 
         #region Unity Functions
-        protected void Awake() {
+        protected void Awake()
+        {
             agent = GetComponent<NavMeshAgent>();
         }
         #endregion
 
         #region Public Functions
-        public void Connected(ROS ros) {
-            if (enabled && sendPathToROS) {
-                Log("Sending path to ROS.",LogLevel.Normal);
-                ros.RegisterPubPackage("Path_pub");
-                if (pathType == PathType.Beacons) {
-                    StartCoroutine(SendPathToROS(ros));
-                } else {
-                    StartCoroutine(SendInterpolatedPathToROS(ros));
-                }
+        public void Connected(ROS ros)
+        {
+            Log("Connected to ROS -> " + enabled.ToString() + " | " + sendPathToROS.ToString() + " | " + sendOdometryToROS.ToString(), LogLevel.Normal);
+            // if (enabled && sendPathToROS)
+            // {
+            Log("Sending path to ROS.", LogLevel.Normal);
+            ros.RegisterPubPackage("Path_pub");
+            if (pathType == PathType.Beacons)
+            {
+                StartCoroutine(SendPathToROS(ros));
             }
-            if (enabled && sendOdometryToROS) {
-                Log("Sending odometry to ROS.",LogLevel.Normal);
-                ros.RegisterPubPackage("Odometry_pub");
-                StartCoroutine(SendOdometryToROS(ros));
+            else
+            {
+                StartCoroutine(SendInterpolatedPathToROS(ros));
             }
+            // }
+            // if (enabled && sendOdometryToROS)
+            // {
+            Log("Sending odometry to ROS.", LogLevel.Normal);
+            ros.RegisterPubPackage("Odometry_pub");
+            StartCoroutine(SendOdometryToROS(ros));
+            // }
         }
 
         public string GetTransformString()
@@ -74,16 +84,21 @@ namespace RobotAtVirtualHome {
         #endregion
 
         #region Private Functions  
-        private IEnumerator SendPathToROS(ROS ros) {
-            while (Application.isPlaying) {
-                if (ros.IsConnected()) {
+        private IEnumerator SendPathToROS(ROS ros)
+        {
+            while (Application.isPlaying)
+            {
+                if (ros.IsConnected())
+                {
                     Vector3[] points = agent.path.corners;
                     PoseStampedMsg[] poses = new PoseStampedMsg[points.Length];
                     HeaderMsg head = new HeaderMsg(0, new TimeMsg(DateTime.Now.Second, 0), "map");
                     Quaternion rotation = transform.rotation;
-                    for (int i = 0; i < points.Length; i++) {
+                    for (int i = 0; i < points.Length; i++)
+                    {
                         head.SetSeq(i);
-                        if (i > 0) {
+                        if (i > 0)
+                        {
                             rotation = Quaternion.FromToRotation(points[i - 1], points[i]);
                         }
 
@@ -99,18 +114,25 @@ namespace RobotAtVirtualHome {
         }
 
         // This function was design by: Jose Luiz Matez
-        private IEnumerator SendInterpolatedPathToROS(ROS ros) {
-            while (Application.isPlaying) {
-                if (ros.IsConnected()) {
+        private IEnumerator SendInterpolatedPathToROS(ROS ros)
+        {
+            while (Application.isPlaying)
+            {
+                if (ros.IsConnected())
+                {
                     Vector3[] points = agent.path.corners;
                     Vector3[] path = new Vector3[6];
                     float[] distances = new float[points.Length];
                     float[] angles = new float[points.Length];
                     PoseStampedMsg[] poses = new PoseStampedMsg[path.Length];
-                    for (int i = 0; i < (points.Length - 1); i++) {
-                        if (i == 0) {
+                    for (int i = 0; i < (points.Length - 1); i++)
+                    {
+                        if (i == 0)
+                        {
                             distances[i] = Vector3.Distance(transform.position, points[i + 1]);
-                        } else {
+                        }
+                        else
+                        {
                             distances[i] = Vector3.Distance(points[i], points[i + 1]);
                         }
                         angles[i] = Mathf.Atan2(points[i + 1].z - points[i].z, points[i + 1].x - points[i].x);
@@ -120,18 +142,25 @@ namespace RobotAtVirtualHome {
                     Quaternion rotation = transform.rotation;
                     poses[0] = new PoseStampedMsg(head, new PoseMsg(path[0], rotation, true));
                     head.SetSeq(0);
-                    for (int j = 1; j < 6; j++) {
+                    for (int j = 1; j < 6; j++)
+                    {
                         float accumulatedDistance = 0.0f;
                         int idx = 0;
-                        while (accumulatedDistance < agent.velocity.magnitude && idx < distances.Length) {
-                            if (idx < distances.Length) {
-                                if (distances[idx] >= (agent.velocity.magnitude - accumulatedDistance)) {
+                        while (accumulatedDistance < agent.velocity.magnitude && idx < distances.Length)
+                        {
+                            if (idx < distances.Length)
+                            {
+                                if (distances[idx] >= (agent.velocity.magnitude - accumulatedDistance))
+                                {
                                     distances[idx] = distances[idx] - (agent.velocity.magnitude - accumulatedDistance);
                                     accumulatedDistance = accumulatedDistance + (agent.velocity.magnitude - accumulatedDistance);
-                                } else {
+                                }
+                                else
+                                {
                                     accumulatedDistance = accumulatedDistance + distances[idx];
                                     distances[idx] = 0.0f;
-                                    if (idx == (distances.Length - 1)) {
+                                    if (idx == (distances.Length - 1))
+                                    {
                                         HeaderMsg head_path = new HeaderMsg(0, new TimeMsg(DateTime.Now.AddSeconds(j).Second, 0), "map");
                                         Quaternion add_rotation = Quaternion.Euler(0.0f, angles[idx], 0.0f);
                                         rotation = rotation * add_rotation;
@@ -140,7 +169,8 @@ namespace RobotAtVirtualHome {
                                         poses[j] = new PoseStampedMsg(head_path, new PoseMsg(path[j], rotation, true));
                                     }
                                 }
-                                if (accumulatedDistance == agent.velocity.magnitude) {
+                                if (accumulatedDistance == agent.velocity.magnitude)
+                                {
                                     HeaderMsg head_path = new HeaderMsg(0, new TimeMsg(DateTime.Now.AddSeconds(j).Second, 0), "map");
                                     Quaternion add_rotation = Quaternion.Euler(0.0f, angles[idx], 0.0f);
                                     rotation = rotation * add_rotation;
@@ -149,7 +179,9 @@ namespace RobotAtVirtualHome {
                                     poses[j] = new PoseStampedMsg(head_path, new PoseMsg(path[j], rotation, true));
                                 }
                                 idx = idx + 1;
-                            } else {
+                            }
+                            else
+                            {
                                 accumulatedDistance = agent.velocity.magnitude;
                                 path[j] = path[j - 1];
                                 HeaderMsg head_path = new HeaderMsg(0, new TimeMsg(DateTime.Now.AddSeconds(j).Second, 0), "map");
@@ -159,7 +191,8 @@ namespace RobotAtVirtualHome {
                             }
                         }
                     }
-                    if (poses[1] != null) {
+                    if (poses[1] != null)
+                    {
                         HeaderMsg globalHead = new HeaderMsg(0, new TimeMsg(DateTime.Now.Second, 0), "map");
                         PathMsg pathmsg = new PathMsg(globalHead, poses);
                         ros.Publish(Path_pub.GetMessageTopic(), pathmsg);
@@ -170,21 +203,25 @@ namespace RobotAtVirtualHome {
         }
 
         // Send Odometry to ROS
-        private IEnumerator SendOdometryToROS(ROS ros) {
-            while (Application.isPlaying) {
-                if (ros.IsConnected()) {
+        private IEnumerator SendOdometryToROS(ROS ros)
+        {
+            while (Application.isPlaying)
+            {
+                if (ros.IsConnected())
+                {
 
                     double[] covariance_pose = new double[36];
 
-					for (int i = 0; i < covariance_pose.Length; i++) {
-						covariance_pose[i] = 0.0f;
-					}
-                    
+                    for (int i = 0; i < covariance_pose.Length; i++)
+                    {
+                        covariance_pose[i] = 0.0f;
+                    }
+
                     HeaderMsg globalHead = new HeaderMsg(0, new TimeMsg(DateTime.Now.Second, 0), "map");
                     PoseWithCovarianceMsg pose = new PoseWithCovarianceMsg(new PoseMsg(new PointMsg(transform.position, true), new QuaternionMsg(transform.rotation, true)),
                                                                             covariance_pose);
                     TwistWithCovarianceMsg twist = new TwistWithCovarianceMsg(new TwistMsg(new Vector3Msg(agent.velocity, true), new Vector3Msg(0.0f, 0.0f, 0.0f)), covariance_pose);
-                    
+
                     OdometryMsg odometrymsg = new OdometryMsg(globalHead, "odom", pose, twist);
                     ros.Publish(Odometry_pub.GetMessageTopic(), odometrymsg);
                 }

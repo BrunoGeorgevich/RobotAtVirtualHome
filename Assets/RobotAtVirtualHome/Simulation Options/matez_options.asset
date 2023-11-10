@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 16f5a1f89789d3743a9a125b62cafc4d, type: 3}
   m_Name: matez_options
   m_EditorClassIdentifier: 
-  houseSelected: 20
-  path: /home/matez/Unity/Semantic_Records/RobotAtVirtualHome/
+  houseSelected: 0
+  path: B:\Documentos\Unity Workspace\SemanticRecords\
   SunRotation: 100
   StateGeneralLight: 0
   StateLights: 0

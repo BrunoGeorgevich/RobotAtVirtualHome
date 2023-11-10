@@ -85,11 +85,11 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   LogLevel: 1
   state: 0
-  sendPathToROS: 0
+  sendPathToROS: 1
   pathType: 0
-  rOSFrecuencyPath: 1
-  sendOdometryToROS: 0
-  rOSFrecuencyOdometry: 1
+  rOSFrecuencyPath: 300
+  sendOdometryToROS: 1
+  rOSFrecuencyOdometry: 300
   nCycles: 5
   random: 0
   timeBetweenDataCapture: 1

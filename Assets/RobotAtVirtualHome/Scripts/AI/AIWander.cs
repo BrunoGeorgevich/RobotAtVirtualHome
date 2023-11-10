@@ -7,11 +7,13 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.AI;
 
-namespace RobotAtVirtualHome {
+namespace RobotAtVirtualHome
+{
 
     [RequireComponent(typeof(NavMeshAgent))]
 
-    public class AIWander : VirtualAgent {
+    public class AIWander : VirtualAgent
+    {
 
         [Header("Behaviour")]
         [Range(1, 100)]
@@ -37,7 +39,7 @@ namespace RobotAtVirtualHome {
         private StreamWriter logImgWriter;
         private StreamWriter logScanWriter;
         private StreamWriter logLidarWriter;
-        private int index = 0;    
+        private int index = 0;
         private int index2 = 0;
 
         private SmartCamera smartCamera;
@@ -49,7 +51,7 @@ namespace RobotAtVirtualHome {
         {
             base.Awake();
             smartCamera = GetComponentInChildren<SmartCamera>();
-            if((captureRGB|| captureDepth || captureSemanticMask) && smartCamera == null)
+            if ((captureRGB || captureDepth || captureSemanticMask) && smartCamera == null)
             {
                 captureRGB = false;
                 captureDepth = false;
@@ -63,44 +65,51 @@ namespace RobotAtVirtualHome {
                 Log("Laser not found", LogLevel.Error, true);
             }
             lidar = GetComponentInChildren<Lidar>();
-            if(captureLidar && lidar == null)
+            if (captureLidar && lidar == null)
             {
                 captureLidar = false;
                 Log("Lidar not found", LogLevel.Error, true);
             }
         }
 
-        void Start() {
+        void Start()
+        {
             VisitPoints = new List<Vector3>();
 
             var house = FindObjectOfType<House>();
 
-            foreach (VirtualObject light in house.virtualObjects.FindAll(obj => obj.tags.Contains(ObjectTag.Light))) {
+            foreach (VirtualObject light in house.virtualObjects.FindAll(obj => obj.tags.Contains(ObjectTag.Light)))
+            {
                 var point = light.transform.position;
                 point.y = 0;
                 VisitPoints.Add(point);
             }
-            
-            if (captureRGB || captureDepth || captureSemanticMask || captureScan || captureLidar) {
+
+            if (captureRGB || captureDepth || captureSemanticMask || captureScan || captureLidar)
+            {
                 filePath = FindObjectOfType<EnvironmentManager>().path;
                 string tempPath = Path.Combine(filePath, "Wandering");
                 int i = 0;
-                while (Directory.Exists(tempPath)) {
+                while (Directory.Exists(tempPath))
+                {
                     i++;
                     tempPath = Path.Combine(filePath, "Wandering" + i);
                 }
 
                 filePath = tempPath;
-                if (!Directory.Exists(filePath)) {
+                if (!Directory.Exists(filePath))
+                {
                     Directory.CreateDirectory(filePath);
                 }
 
-                if(captureRGB || captureDepth || captureSemanticMask) {
+                if (captureRGB || captureDepth || captureSemanticMask)
+                {
                     logImgWriter = new StreamWriter(filePath + "/LogImg.csv", true);
                     logImgWriter.WriteLine("PhotoID,XRobotPosition,YRobotPosition,ZRobotPosition,YRobotRotation,ZRobotRotation,XCameraPosition,YCameraPosition,ZCameraPosition,XCameraRotation,YCameraRotation,ZCameraRotation,Room");
                 }
 
-                if (captureScan) {
+                if (captureScan)
+                {
                     logScanWriter = new StreamWriter(filePath + "/LogScan.csv", true);
                     logScanWriter.WriteLine("ScanID,XRobotPosition,YRobotPosition,ZRobotPosition,YRobotRotation,ZRobotRotation,XLaserPosition,YLaserPosition,ZLaserPosition,XLaserRotation,YLaserRotation,ZLaserRotation,Room,Measures");
                 }
@@ -115,7 +124,7 @@ namespace RobotAtVirtualHome {
                     logLidarWriter.WriteLine("ScanID,XRobotPosition,YRobotPosition,ZRobotPosition,YRobotRotation,ZRobotRotation,XLidarPosition,YLidarPosition,ZLidarPosition,XLidarRotation,YLidarRotation,ZLidarRotation,Room");
                 }
 
-                Log("The saving path is:" + filePath,LogLevel.Normal);                
+                Log("The saving path is:" + filePath, LogLevel.Normal);
 
             }
 
@@ -143,24 +152,30 @@ namespace RobotAtVirtualHome {
             }
         }
 
-        void Update() {
-            switch (state) {
+        void Update()
+        {
+            switch (state)
+            {
                 case StatusMode.Walking:
                     if (Physics.Raycast(transform.position, transform.TransformDirection(Vector3.down), out RaycastHit hit))
                     {
                         currentRoom = hit.transform.name;
                     }
-                    
+
                     if (agent.remainingDistance <= agent.stoppingDistance &&
-                        agent.velocity.sqrMagnitude == 0f) {
+                        agent.velocity.sqrMagnitude == 0f)
+                    {
                         Vector3 nextGoal;
-                        if (GetNextGoal(out nextGoal)) {
+                        if (GetNextGoal(out nextGoal))
+                        {
                             agent.SetDestination(nextGoal);
                             agent.isStopped = false;
-                            Log("Next goal:" + nextGoal.ToString(),LogLevel.Normal);
+                            Log("Next goal:" + nextGoal.ToString(), LogLevel.Normal);
                             state = StatusMode.Loading;
                             StartCoroutine(DoOnGoal());
-                        } else {
+                        }
+                        else
+                        {
                             if (nCycles > 0)
                             {
                                 Debug.Break();
@@ -168,7 +183,7 @@ namespace RobotAtVirtualHome {
                                 index2 = -1;
                                 GetComponent<AudioSource>().Play();
                                 FindObjectOfType<DetectionResults>().CalculateResults();
-                                
+
                             }
                             else
                             {
@@ -177,7 +192,7 @@ namespace RobotAtVirtualHome {
                                 GetComponent<AudioSource>().Play();
                                 FindObjectOfType<DetectionResults>().CalculateResults();
                                 OnEndRute?.Invoke();
-                            }                            
+                            }
                         }
                     }
                     break;
@@ -204,13 +219,15 @@ namespace RobotAtVirtualHome {
 
 
         #region Private Functions
-        private IEnumerator DoOnGoal() {
+        private IEnumerator DoOnGoal()
+        {
             yield return new WaitForSeconds(1);
             state = StatusMode.Walking;
             agent.isStopped = false;
         }
 
-        private bool GetNextGoal(out Vector3 result) {
+        private bool GetNextGoal(out Vector3 result)
+        {
             result = Vector3.zero;
             if (random)
             {
@@ -231,7 +248,7 @@ namespace RobotAtVirtualHome {
         }
 
         private IEnumerator CaptureData()
-        {            
+        {
             while (state != StatusMode.Finished)
             {
                 agent.isStopped = true;
@@ -239,11 +256,11 @@ namespace RobotAtVirtualHome {
                 string robotTransform = GetTransformString();
                 if (captureRGB)
                 {
-                    logImgWriter.WriteLine(index.ToString()+ "_rgb.jpg,"+
+                    logImgWriter.WriteLine(index.ToString() + "_rgb.jpg," +
                                 robotTransform + "," +
                                 smartCamera.GetTransformString() + "," +
                                 currentRoom);
-                    File.WriteAllBytes(filePath + "/" + index.ToString() + "_rgb.jpg", smartCamera.CaptureImage(SmartCamera.ImageType.RGB).EncodeToJPG());                    
+                    File.WriteAllBytes(filePath + "/" + index.ToString() + "_rgb.jpg", smartCamera.CaptureImage(SmartCamera.ImageType.RGB).EncodeToJPG());
                 }
                 if (captureDepth)
                 {
@@ -259,7 +276,7 @@ namespace RobotAtVirtualHome {
                                 robotTransform + "," +
                                 smartCamera.GetTransformString() + "," +
                                 currentRoom);
-                    File.WriteAllBytes(filePath + "/" + index.ToString() + "_mask.jpg", smartCamera.CaptureImage(SmartCamera.ImageType.InstanceMask).EncodeToJPG());                   
+                    File.WriteAllBytes(filePath + "/" + index.ToString() + "_mask.jpg", smartCamera.CaptureImage(SmartCamera.ImageType.InstanceMask).EncodeToJPG());
                 }
                 if (captureScan)
                 {
